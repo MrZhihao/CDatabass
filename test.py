@@ -93,7 +93,7 @@ if 0:
 # Set flag to True for Example of compiling a query
 if 0:
   # PROJECT
-  plan, alias2table = parse("SELECT a, a+b FROM data")
+  plan = parse("SELECT a, a+b FROM data")
   plan = Yield(opt(plan.to_plan()))
   q = PyCompiledQuery(plan, None)
   print(q.print_code())

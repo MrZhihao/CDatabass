@@ -43,7 +43,7 @@ if __name__ == "__main__":
     out.write(footer)
 
 def parse_and_optimize(qstr):
-  plan, alias2table = parse(qstr)
+  plan = parse(qstr)
   plan = plan.to_plan()
   plan = Yield(plan)
   opt = Optimizer()
@@ -81,8 +81,7 @@ if __name__ == "__main__":
         ast = cond_to_func(q)
       except Exception as err_expr:
         try:
-          # PROJ
-          ast, alias2table = parse(q)
+          ast = parse(q)
         except Exception as err:
           print("ERROR:", err)
 

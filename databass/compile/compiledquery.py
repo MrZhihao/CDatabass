@@ -13,7 +13,7 @@ class CompiledQuery(object):
   def __init__(self, qstr_or_plan, lineage_policy=None):
     if isinstance(qstr_or_plan, str):
       # PROJECT
-      plan, alias2table = parse(qstr_or_plan)
+      plan = parse(qstr_or_plan)
       self.plan = Collect(plan.to_plan())
     else:
       self.plan = qstr_or_plan

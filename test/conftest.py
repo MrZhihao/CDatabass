@@ -49,11 +49,11 @@ def run_sqlite_query(context, qstr):
 
 def run_databass_query(context, qstr):
   # PROJECT
-  plan, alias2table = parse(qstr)
+  plan, alias2table = get_parserTree_tableAlias(qstr)
   plan = plan.to_plan()
   return run_plan(context, plan, alias2table)
 
-def run_plan(context, plan, alias2table):
+def run_plan(context, plan, alias2table=None):
   databass_rows = list()
   plan = context['opt'](plan, alias2table)
   for row in plan:
