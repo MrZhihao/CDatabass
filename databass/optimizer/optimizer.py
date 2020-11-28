@@ -40,14 +40,19 @@ class Optimizer(object):
     self.verify_attr_refs(op)
 
     # Let Scan operators know columns that are required to be scaned
+    table2alias = defaultdict(set)
+    for alias, tablename in alias2table.items():
+        table2alias[tablename]
+
     for scan_op in op.collect("Scan"):
+      #scan_op.table_alias = ta.get(scan.op) 
       scan_op.get_cols_to_scan()
 
     return op
 
   def collect_from_clauses(self, op, froms=None):
     """
-    Post-order traversal
+    Post-order traversalx
     """
     froms = [] if froms is None else froms
     for c in op.children():
