@@ -62,6 +62,9 @@ class Scan(Source):
     self.tablename = tablename
     self.alias = alias or tablename
 
+    # List of tuples (table name, attribute name)
+    self.cols_to_scan = []
+
     from ..db import Database
     self.db = Database.db()
 
@@ -75,6 +78,18 @@ class Scan(Source):
     self.schema.set_tablename(self.alias)
     return self.schema
 
+  def get_col_up_needed(self):
+    li = self.p.get_col_up_needed()
+    print(li)
+    return li
+
+  def get_cols_to_scan(self):
+    self.cols_to_scan = list(set(filter(lambda col: col[0] == self.alias, self.get_col_up_needed())))
+    print(self.cols_to_scan)
+    
+
+
+  
   def __iter__(self):
     # initialize a single intermediate tuple
     irow = ListTuple(self.schema, [])

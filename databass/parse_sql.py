@@ -429,6 +429,8 @@ class Visitor(NodeVisitor):
 def parse(s):
   query = Visitor().parse(s)
   query.initialize()
-  return query
+  source_tables = list(filter(lambda x: x.typ == PRangeVar.TABLE, query.collect("PRangeVar")))
+  alias2table = {source_table.alias: source_table.e for source_table in source_tables}
+  return query, alias2table
 
 

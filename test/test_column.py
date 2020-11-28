@@ -6,7 +6,8 @@ from databass import *
 from databass.tables import InMemoryTable
 
 simple_qs = [
-    "SELECT a FROM data"
+    "SELECT a, a+b FROM data AS d1",
+    "SELECT d1.a FROM data as d1, data as d2 WHERE d1.a = d2.a"
 ]
 
 phase1 = lambda v: "test_phase1"

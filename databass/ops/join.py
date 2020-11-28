@@ -6,8 +6,6 @@ from ..tuples import *
 from ..util import cache, OBTuple
 from itertools import chain
 
-
-
 class From(NaryOp):
   """
   Logical FROM operator. 

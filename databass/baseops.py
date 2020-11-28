@@ -205,6 +205,14 @@ class Op(object):
     """
     raise Exception("Op.schema() not implemented for %s" % self)
 
+  def get_col_up_needed(self):
+    '''
+    1. call this function of the parent.
+    2. add cols this operator needs
+    3. return the final col lists 
+    '''
+    return []
+
   def compile_exprs(self, ctx, exprs):
     """
     Helper function for compilation.  Compiles a list

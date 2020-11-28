@@ -32,8 +32,19 @@ class Project(UnaryOp):
     for alias, expr in zip(self.aliases, self.exprs):
       typ = expr.get_type()
       self.schema.attrs.append(Attr(alias, typ))
+
+    # PROJECT
+    # collect Attrs from project exprs
+    seen = {}
+    for attr in chain(*[e.referenced_attrs for e in self.exprs]):
+      attr = attr.copy()
+      seen[(attr.tablename, attr.aname)] = attr
+
+    self.project_attrs = list(seen.values())
     return self.schema
 
+  def get_col_up_needed(self):
+    return self.project_attrs
 
   def __iter__(self):
     child_iter = self.c
