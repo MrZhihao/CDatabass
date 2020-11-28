@@ -28,6 +28,11 @@ class HashJoin(Join):
     super(HashJoin, self).__init__(l, r)
     self.join_attrs = join_attrs
 
+  def get_col_up_needed(self, info=None):
+    needed_attrs = set(self.p.get_col_up_needed())
+    for attr in self.join_attrs:
+      needed_attrs.add((attr.real_tablename, attr.aname))
+    return list(needed_attrs)
 
 
   def __iter__(self):

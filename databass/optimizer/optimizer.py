@@ -25,7 +25,7 @@ class Optimizer(object):
     self.db = db or Database.db()
     self.join_optimizer = join_optimizer_klass(self.db)
 
-  def __call__(self, op, alias2table=None):
+  def __call__(self, op):
     if not op: return None
 
     op = self.initialize_and_resolve(op)
@@ -40,12 +40,7 @@ class Optimizer(object):
     self.verify_attr_refs(op)
 
     # Let Scan operators know columns that are required to be scaned
-    table2alias = defaultdict(set)
-    for alias, tablename in alias2table.items():
-        table2alias[tablename]
-
     for scan_op in op.collect("Scan"):
-      #scan_op.table_alias = ta.get(scan.op) 
       scan_op.get_cols_to_scan()
 
     return op

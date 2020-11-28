@@ -5,6 +5,7 @@ from ..schema import *
 from ..tuples import *
 from ..util import cache, OBTuple
 from itertools import chain
+from .root import *
 
 ########################################################
 #
@@ -33,18 +34,19 @@ class Project(UnaryOp):
       typ = expr.get_type()
       self.schema.attrs.append(Attr(alias, typ))
 
-    # PROJECT
-    # collect Attrs from project exprs
-    seen = {}
-    for attr in chain(*[e.referenced_attrs for e in self.exprs]):
-      attr = attr.copy()
-      seen[(attr.tablename, attr.aname)] = attr
-
-    self.project_attrs = list(seen.values())
     return self.schema
 
   def get_col_up_needed(self):
-    return self.project_attrs
+    # TODO optimize subquery
+    # if self.p and not isinstance(self.p, Sink):
+    #   # self.p.get_col_up_needed()
+    #   # process [a,b,c,d] a.referenced_attrs
+    #   # self.exprs self.schema, clear unused alias
+    #   # edit schema
+    seen = set()
+    for attr in chain(*[e.referenced_attrs for e in self.exprs]):
+      seen.add((attr.real_tablename, attr.aname))
+    return list(seen)
 
   def __iter__(self):
     child_iter = self.c

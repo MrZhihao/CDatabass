@@ -84,7 +84,7 @@ class Scan(Source):
     return li
 
   def get_cols_to_scan(self):
-    #self.cols_to_scan = list(set(filter(lambda col: col[0] == self.alias, self.get_col_up_needed())))
+    self.cols_to_scan = list(set(filter(lambda col: col[0] == self.tablename, self.get_col_up_needed())))
     print(self.cols_to_scan)
     
 

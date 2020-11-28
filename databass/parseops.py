@@ -336,7 +336,7 @@ class PSelectQuery(POp):
     for q in self.all_subqueries:
       q.check_types()
 
-  def resolve_schemas_and_references(self, db, scope=None):
+  def resolve_schemas_and_references(self, db, scope=None, rnscope=None):
     """
     Walk the parse tree to resolve attribute references and assign each query's schema
     """
@@ -346,14 +346,16 @@ class PSelectQuery(POp):
     # schemas defined at this level are accessible in subqueries
     # in deeper nesting levels
     scope = list(scope) if scope else []
+    rnscope = list(rnscope) if rnscope else []
     scope.append({})
+    rnscope.append({})
 
     # subqueries in the FROM clause don't get access to the current level
     for q in self.from_subqueries:
-      q.resolve_schemas_and_references(db, scope[:-1])
+      q.resolve_schemas_and_references(db, scope[:-1], rnscope[:-1])
 
     # resolves attr tablenames and types, populates scope[-1]
-    self.resolve_references(db, scope)
+    self.resolve_references(db, scope, rnscope)
     self.resolve_schema(db, scope)
 
     for q in self.expr_subqueries:
@@ -361,7 +363,7 @@ class PSelectQuery(POp):
 
     scope.pop()
 
-  def resolve_references(self, db, scope):
+  def resolve_references(self, db, scope, rnscope):
     """
     1. Check that attributes are unambiguous and reference actual
        attributes in range variables (tables/subqs)
@@ -385,6 +387,7 @@ class PSelectQuery(POp):
         if r.e not in db:
           raise Exception("Table does not exist: %s" % r)
         scope[-1][r.alias] = db[r.e].schema
+        rnscope[-1][r.alias] = r.e
       elif r.typ == PRangeVar.QUERY:
         scope[-1][r.alias] = r.e.schema
 
@@ -394,6 +397,12 @@ class PSelectQuery(POp):
         self.resolve_attr_with_tablename(a, scope)
       else:
         self.resolve_attr_wout_tablename(a, scope)
+      self.give_attr_real_tablename(a, rnscope)
+
+  def give_attr_real_tablename(self, a, rnscope):
+    for alias2table in rnscope[::-1]:
+      if a.tablename in alias2table:
+        a.real_tablename = alias2table[a.tablename]
 
   def resolve_attr_with_tablename(self, a, scope):
     matches = 0

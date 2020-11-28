@@ -403,6 +403,8 @@ class Attr(ExprBase):
     # It should be initialized in optimizer.__call__()
     self.idx = idx
 
+    self.real_tablename = None
+
     self.id = ExprBase.next_id()
 
   def get_type(self):
