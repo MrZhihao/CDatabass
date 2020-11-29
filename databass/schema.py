@@ -49,6 +49,8 @@ class Schema(object):
 
 
   def __getitem__(self, key):
+    if isinstance(key, int) and len(self.attrs) > key:
+      return self.attrs[key]
     for a in self.attrs:
       if isinstance(key, str):
         if a.aname == key:

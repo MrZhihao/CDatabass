@@ -57,3 +57,26 @@ class InMemoryTable(Table):
     for row in self.rows:
       yield ListTuple(self.schema, row)
 
+
+class InMemoryColumnarTable(Table):
+  """
+  Column-oriented table that stores its data by arrow table in memory.
+  """
+  def __init__(self, schema, table):
+    super(InMemoryColumnarTable, self).__init__(schema)
+    self.num_rows = table.num_rows
+    self.columns = table.columns
+    self.attr_to_idx = { a.aname: i 
+        for i,a in enumerate(self.schema)}
+  
+  def __getitem__(self, info):
+    if not isinstance(info, list):
+      info = [info]
+    if isinstance(info[0], int):
+      info = set(info)
+      return [self.columns[idx] if idx in info else None for idx in range(len(self.columns))]
+    elif isinstance(info[0], str):
+      info = set(info)
+      return [self.columns[idx] if self.schema[idx].aname in info else None for idx in range(len(self.columns))]
+    else:
+      raise Exception('Invalid fields for table')
