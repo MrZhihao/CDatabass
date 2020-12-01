@@ -32,6 +32,12 @@ class SubQuerySource(Source):
   def __iter__(self):
     for row in self.c:
       yield row
+  
+  def get_col_up_needed(self):
+    return self.p.get_col_up_needed()
+
+  def hand_in_result(self):
+    return self.c.hand_in_result()
 
   def init_schema(self):
     """

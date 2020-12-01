@@ -388,6 +388,8 @@ class PSelectQuery(POp):
           raise Exception("Table does not exist: %s" % r)
         scope[-1][r.alias] = db[r.e].schema
         rnscope[-1][r.alias] = r.e
+        for a in db[r.e].schema:
+          a.real_tablename = r.e
       elif r.typ == PRangeVar.QUERY:
         scope[-1][r.alias] = r.e.schema
 
@@ -595,6 +597,15 @@ class PSelectQuery(POp):
     for e in self.get_exprs():
       ret.extend(e.collect(Attr, until))
     return ret
+  
+  # def get_stars(self):
+  #   """
+  #   Retrieve all attributes within q's scope (not subqueries)
+  #   """
+  #   ret = []
+  #   until = lambda n: n.is_type(PSelectQuery)
+  #   return self.collect(Star, until)
+
 
   def get_having_exprs(self, qual):
     """
