@@ -9,6 +9,7 @@
      T.a + 2 / T.b
 
 """
+from databass.columns import ListColumns
 from .baseops import *
 from .util import guess_type
 from pyarrow import compute
@@ -385,6 +386,13 @@ class Bool(Literal):
 
   def get_type(self):
     return "num"
+
+  def __call__(self, v):
+    if type(v) == ListColumns:
+      res = [self.v] * v.num_rows()
+      return [self.v] * v.num_rows()
+    else:
+      return self.v
 
 class Date(Literal):
   def __init__(self, v):

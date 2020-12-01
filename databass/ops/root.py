@@ -29,7 +29,7 @@ class Yield_Col(Sink):
 
     irow = ListTuple(self.schema, [])
 
-    for row_idx in range(handin_res[0].length()):
+    for row_idx in range(handin_res.num_rows()):
       row = []
       for col_idx in range(len(handin_res)):
         row.append(handin_res[col_idx][row_idx].as_py())

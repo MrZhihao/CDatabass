@@ -6,6 +6,7 @@ from databass import *
 from databass.tables import InMemoryTable
 
 simple_qs = [
+    "SELECT d1.a, d2.b FROM data AS d1, data AS d2",
     "SELECT d1.a, d2.b FROM data AS d1, data AS d2 WHERE d1.a=d2.a",
     # "SELECT d1.a, d2.b FROM data AS d1, (SELECT * FROM data AS d1) AS d2 WHERE d1.a=d2.a",
     #"SELECT a, a+b FROM data AS d1",

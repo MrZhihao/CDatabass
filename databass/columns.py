@@ -23,5 +23,16 @@ class ListColumns(object):
   def __len__(self):
     return len(self.columns)
 
+  def num_rows(self):
+    num_rows = 0
+    for column in self.columns:
+      if column:
+        num_rows = column.length()
+        break
+    return num_rows
+  
+  def __iter__(self):
+    return iter(self.columns)
+
   def __str__(self):
     return "(%s)" % ", ".join(map(str, self.columns))

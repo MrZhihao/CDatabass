@@ -5,6 +5,8 @@ from ..schema import *
 from ..tuples import *
 from ..util import cache, OBTuple
 from itertools import chain
+from ..columns import ListColumns
+from pyarrow import compute
 
 class From(NaryOp):
   """
@@ -57,6 +59,26 @@ class ThetaJoin(Join):
 
         if self.cond(irow):
           yield irow
+
+  def hand_in_result(self):
+    l_tb, r_tb = self.l.hand_in_result(), self.r.hand_in_result()
+
+    left_col_pos = list(chain(*[[l_pos]*r_tb.num_rows() for l_pos in range(l_tb.num_rows())]))
+    right_col_pos = list(chain(*[list(range(r_tb.num_rows())) for _ in range(l_tb.num_rows())]))
+
+    column_res = []
+    for l_col in l_tb:
+      column_res.append(l_col.take(left_col_pos) if l_col else None)
+  
+    for r_col in r_tb:
+      column_res.append(r_col.take(right_col_pos) if r_col else None)
+    
+    mask = self.cond(ListColumns(self.schema, column_res))
+
+    # if type(mask) == bool:
+    #   return ListColumns(self.schema, column_res if mask else [None] * len(self.schema))
+
+    return ListColumns(self.schema, [col.filter(mask) if col else None for col in column_res])
 
   def __str__(self):
     return "THETAJOIN(ON %s)" % (str(self.cond))
