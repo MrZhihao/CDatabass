@@ -1,3 +1,4 @@
+from databass.columns import ListColumns
 from ..baseops import *
 from ..exprs import *
 from ..db import Database
@@ -72,7 +73,7 @@ class HashJoin(Join):
     for r_col in r_tb:
       column_res.append(r_col.take(right_col_pos) if r_col else None)
     
-    return column_res
+    return ListColumns(self.schema, column_res)
     
 
 
