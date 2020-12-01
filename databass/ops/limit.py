@@ -5,6 +5,7 @@ from ..schema import *
 from ..tuples import *
 from ..util import cache, OBTuple
 from itertools import chain
+from ..columns import ListColumns
 
 class Limit(UnaryOp):
   def __init__(self, c, limit, offset=0):
@@ -29,20 +30,12 @@ class Limit(UnaryOp):
     if self._offset < 0:
       raise Exception("OFFSET must not be negative: %d" % o)
 
+  def get_col_up_needed(self, info=None):
+    return self.p.get_col_up_needed()
 
-  def __iter__(self):
-    """
-    LIMIT should skip <offset> number of rows, and yield at most <limit>
-    number of rows
-    """
-    nyielded = 0
-    for i, row in enumerate(self.c):
-      if i < self._offset: 
-        continue
-      if nyielded >= self._limit:
-        break
-      nyielded += 1
-      yield row
+  def hand_in_result(self):
+    handin_res = self.c.hand_in_result()
+    return ListColumns(self.schema, [col.slice(offset=self._offset,length=self._limit) for col in handin_res])
 
   def __str__(self):
     return "LIMIT(%s OFFSET %s)" % (self.limit, self.offset)
