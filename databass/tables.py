@@ -4,6 +4,7 @@ import os
 from .stats import Stats
 from .tuples import *
 from .exprs import Attr
+import pyarrow as pa
 
 class Table(object):
   """
@@ -66,6 +67,10 @@ class InMemoryColumnarTable(Table):
     super(InMemoryColumnarTable, self).__init__(schema)
     self.num_rows = table.num_rows
     self.columns = table.columns
+    for idx in range(len(self.columns)):
+      if self.columns[idx].type.equals(pa.int64()):
+        self.columns[idx] = self.columns[idx].cast(pa.float64())
+
     self.attr_to_idx = { a.aname: i 
         for i,a in enumerate(self.schema)}
   

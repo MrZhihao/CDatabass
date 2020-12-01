@@ -75,9 +75,6 @@ class ThetaJoin(Join):
     
     mask = self.cond(ListColumns(self.schema, column_res))
 
-    # if type(mask) == bool:
-    #   return ListColumns(self.schema, column_res if mask else [None] * len(self.schema))
-
     return ListColumns(self.schema, [col.filter(mask) if col else None for col in column_res])
 
   def __str__(self):
