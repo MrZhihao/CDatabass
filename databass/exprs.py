@@ -11,6 +11,7 @@
 """
 from .baseops import *
 from .util import guess_type
+from pyarrow import compute
 
 
 def unary(op, v):
@@ -23,6 +24,18 @@ def unary(op, v):
     return -v
   if op.lower() == "not":
     return not(v)
+  raise Exception("unary op not implemented")
+
+def unary_col(op, v):
+  """
+  interpretor for executing unary operator expressions on columnars
+  """
+  if op == "+":
+    return v
+  if op == "-":
+    return compute.subtract(0, v)
+  if op.lower() == "not":
+    return compute.invert(v)
   raise Exception("unary op not implemented")
 
 def binary(op, l, r):
@@ -44,6 +57,27 @@ def binary(op, l, r):
   if op == "==": return l == r
   if op == "<=": return l <= r
   if op == ">=": return l >= r
+  raise Exception("binary op not implemented")
+
+def binary_col(op, l, r):
+  """
+  interpretor for executing binary operator expressions
+  """
+  if op == "+": return compute.add_checked(l, r)
+  if op == "*": return compute.multiply_checked(l, r)
+  if op == '-': return compute.subtract_checked(l, r)
+  if op == "=": return compute.equal(l, r)
+  if op == "<>": return compute.not_equal(l, r)
+  if op == "!=": return compute.not_equal(l, r)
+  if op == "or": return compute.or_(l, r)
+  if op == "<": return compute.less(l, r)
+  if op == ">": return compute.greater(l, r)
+  if op == "/": return compute.divide_checked(l, r)
+  if op == "and": return compute.and_(l, r)
+  if op == "in": return compute.is_in(l, r)
+  if op == "==": return compute.equal(l, r)
+  if op == "<=": return compute.less_equal(l, r)
+  if op == ">=": return compute.greater_equal(l, r)
   raise Exception("binary op not implemented")
 
 class ExprBase(Op):
@@ -162,12 +196,13 @@ class Expr(ExprBase):
     if r: r = r.copy()
     return Expr(self.op, self.l.copy(), r)
 
-  def __call__(self, row, row2=None):
-    l = self.l(row)
+  def __call__(self, columns):
+
+    l = self.l(columns)
     if self.r is None:
-      return unary(self.op, l)
-    r = self.r(row)
-    return binary(self.op, l, r)
+      return unary_col(self.op, l)
+    r = self.r(columns)
+    return binary_col(self.op, l, r) 
 
 class Paren(ExprBase):
   def __init__(self, c):
@@ -453,8 +488,8 @@ class Attr(ExprBase):
 
 
 
-  def __call__(self, row, *args):
-    return row[self.idx]
+  def __call__(self, columns):
+    return columns[self.idx]
 
   def __str__(self):
     s = ".".join(filter(bool, [self.tablename, self.aname]))

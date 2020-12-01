@@ -213,6 +213,12 @@ class Op(object):
     '''
     raise Exception("Op.get_col_up_needed() not implemented for %s" % self)
     #return self.get_col_up_needed()
+  
+  def hand_in_result(self):
+    raise Exception("Op.hand_in_result() not implemented for %s" % self)
+
+  def __iter__(self):
+    return self.hand_in_result()
 
   def compile_exprs(self, ctx, exprs):
     """

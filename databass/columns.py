@@ -20,5 +20,8 @@ class ListColumns(object):
   def __setitem__(self, idx, val):
     self.columns[idx] = val
 
+  def __len__(self):
+    return len(self.columns)
+
   def __str__(self):
     return "(%s)" % ", ".join(map(str, self.columns))

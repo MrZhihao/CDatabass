@@ -55,6 +55,8 @@ def run_databass_query(context, qstr):
 def run_plan(context, plan):
   databass_rows = list()
   plan = context['opt'](plan)
+  plan = Yield_Col(plan)
+  plan.init_schema()
   for row in plan:
     vals = []
     for v in row:
