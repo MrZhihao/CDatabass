@@ -11,8 +11,9 @@ simple_qs = [
     # "SELECT d1.a, d2.b FROM data AS d1, (SELECT * FROM data AS d1) AS d2 WHERE d1.a=d2.a",
     #"SELECT a, a+b FROM data AS d1",
     #"SELECT b FROM data AS d1 WHERE a <> 5"，
-    "SELECT * from data ORDER BY a asc, b+1 desc limit 10 offset 3",
+    #"SELECT * from data ORDER BY a asc, b+1 desc limit 10 offset 3",
     #"SELECT * FROM data AS d1, (SELECT * FROM data3) AS d2"
+    "SELECT lower(a), sum(b) FROM data GROUP BY a HAVING a = 1",
 ]
 
 # run this to test: pytest test/test_column.py -k "test_q" -s --disable-warnings

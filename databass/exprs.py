@@ -294,14 +294,8 @@ class AggFunc(ExprBase):
   def is_incremental(self):
     return self.f.is_incremental
 
-  def __call__(self, rows, row2=None):
-    args = []
-    for grow in rows:
-      args.append([arg(grow) for arg in self.args])
-
-    # make the arguments columnar:
-    #   [ (a,a,a,a), (b,b,b,b) ]
-    args = list(zip(*args))
+  def __call__(self, columns):
+    args = [arg(columns) for arg in self.args]
     return self.f(*args)
 
   def __str__(self):
@@ -338,8 +332,8 @@ class ScalarFunc(ExprBase):
     args = [a.copy() for a in self.args]
     return AggFunc(self.name, args, self.f)
 
-  def __call__(self, row, row2=None):
-    args = [arg(row) for arg in self.args]
+  def __call__(self, columns):
+    args = [arg(columns) for arg in self.args]
     return self.f(*args)
 
   def __str__(self):
