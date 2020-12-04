@@ -1,12 +1,12 @@
+from pyarrow import ChunkedArray
+
 class ListColumns(object):
   """
-  columnar table base object
+  columnar table base object()
   """
   def __init__(self, schema, cols=None):
     self.schema = schema
-    self.columns = cols or []
-    if len(self.columns) < len(self.schema.attrs):
-      self.columns += [None] * (len(self.schema.attrs) - len(self.columns))
+    self.columns = cols
 
   def copy(self):
     return ListColumns(self.schema.copy(), list(self.columns))
@@ -24,12 +24,17 @@ class ListColumns(object):
     return len(self.columns)
 
   def num_rows(self):
-    num_rows = 0
+    num_rows = -1
     for column in self.columns:
-      if column:
+      if isinstance(column, ChunkedArray):
         num_rows = column.length()
         break
+      if column:
+        num_rows = max(num_rows, 1)
     return num_rows
+
+  def is_terminate(self):
+    return self.columns is None
   
   def __iter__(self):
     return iter(self.columns)

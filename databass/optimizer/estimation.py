@@ -77,7 +77,7 @@ class Estimator(object):
     Estimate the selectivity of a predicate condition
     """
     if cond.is_type(Bool):
-      return cond(None) * 1.0
+      return cond.val(None) * 1.0
 
     if cond.is_type(Attr):
       return self.selectivity_attr(cond)

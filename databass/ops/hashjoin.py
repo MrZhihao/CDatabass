@@ -30,11 +30,10 @@ class HashJoin(Join):
     self.join_attrs = join_attrs
 
   def get_col_up_needed(self, info=None):
-    needed_attrs = set(self.p.get_col_up_needed())
+    seen = set(self.p.get_col_up_needed() if self.p else [])
     for attr in self.join_attrs:
-      needed_attrs.add((attr.real_tablename, attr.aname))
-    return list(needed_attrs)
-
+      seen.add((attr.real_tablename, attr.aname))
+    return list(seen)
 
   def build_hash_index(self, child_cols, idx):
     """
@@ -54,6 +53,8 @@ class HashJoin(Join):
     ridx = self.join_attrs[1].idx
 
     l_tb, r_tb = self.l.hand_in_result(), self.r.hand_in_result()
+    if l_tb.is_terminate() or r_tb.is_terminate():
+      return ListColumns(self.schema, None)
 
     index = self.build_hash_index(r_tb, ridx)
 
@@ -65,6 +66,9 @@ class HashJoin(Join):
 
       left_col_pos.extend([l_pos] * len(matched_r))
       right_col_pos.extend(matched_r)
+    
+    if not left_col_pos or not right_col_pos:
+      return ListColumns(self.schema, None)
 
     column_res = []
     for l_col in l_tb:

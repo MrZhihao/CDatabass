@@ -24,16 +24,15 @@ class Print(Sink):
 class Yield_Col(Sink):
   def __iter__(self):
     handin_res = self.c.hand_in_result()
-    # TODO
-    assert len(handin_res) > 0
+    
+    if not handin_res.is_terminate():
+      irow = ListTuple(self.schema, [])
 
-    irow = ListTuple(self.schema, [])
-
-    for row_idx in range(handin_res.num_rows()):
-      row = []
-      for col_idx in range(len(handin_res)):
-        row.append(handin_res[col_idx][row_idx].as_py())
-      irow.row = row
-      yield irow
+      for row_idx in range(handin_res.num_rows()):
+        row = []
+        for col_idx in range(len(handin_res)):
+          row.append(handin_res[col_idx][row_idx].as_py())
+        irow.row = row
+        yield irow
 
 

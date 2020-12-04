@@ -83,7 +83,7 @@ class GroupBy(UnaryOp):
     return self.schema
 
   def get_col_up_needed(self, info=None):
-    seen = set(self.p.get_col_up_needed())
+    seen = set(self.p.get_col_up_needed() if self.p else [])
     
     for attr in chain(*[e.referenced_attrs for e in self.project_exprs]):
       seen.add((attr.real_tablename, attr.aname))
@@ -103,6 +103,8 @@ class GroupBy(UnaryOp):
       this operator's output schema (see self.init_schema)
     """
     handin_res = self.c.hand_in_result()
+    if handin_res.is_terminate():
+      return ListColumns(self.schema, None)
 
     # hash(key): [attr_pos, gr]
     hashtable = defaultdict(lambda: [None, None, []])
@@ -122,13 +124,11 @@ class GroupBy(UnaryOp):
         hashtable[key][0] = groupval
         hashtable[key][1] = [attr(handin_res)[idx] for attr in self.group_attrs]
       hashtable[key][2].append(idx)
-
-    group_list_columns = ListColumns(handin_res.schema, [])
     
     res_rows = []
 
     for _, (key, attrvals, group) in list(hashtable.items()):
-      group_list_columns = [col.take(group) if col else None for col in handin_res]
+      group_list_columns = ListColumns(handin_res.schema, [col.take(group) if col else None for col in handin_res])
       row = []
       for expr in self.project_exprs:
         if expr.is_type(AggFunc):

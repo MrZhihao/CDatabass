@@ -7,6 +7,7 @@ from ..util import cache, OBTuple
 from itertools import chain
 from ..columns import ListColumns
 from pyarrow import compute
+import pyarrow as pa
 
 class From(NaryOp):
   """
@@ -62,6 +63,8 @@ class ThetaJoin(Join):
 
   def hand_in_result(self):
     l_tb, r_tb = self.l.hand_in_result(), self.r.hand_in_result()
+    if l_tb.is_terminate() or r_tb.is_terminate():
+      return ListColumns(self.schema, None)
 
     left_col_pos = list(chain(*[[l_pos]*r_tb.num_rows() for l_pos in range(l_tb.num_rows())]))
     right_col_pos = list(chain(*[list(range(r_tb.num_rows())) for _ in range(l_tb.num_rows())]))
@@ -74,6 +77,9 @@ class ThetaJoin(Join):
       column_res.append(r_col.take(right_col_pos) if r_col else None)
     
     mask = self.cond(ListColumns(self.schema, column_res))
+
+    if not isinstance(mask, pa.ChunkedArray):
+      return ListColumns(self.schema, [col if col and mask else None for col in column_res])
 
     return ListColumns(self.schema, [col.filter(mask) if col else None for col in column_res])
 

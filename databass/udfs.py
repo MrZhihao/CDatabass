@@ -2,7 +2,7 @@
 Define the structure of aggregate and scalar UDFs, and the UDF registry.
 """
 import numpy as np
-from pyarrow import compute, ChunkedArray, string
+from pyarrow import compute, ChunkedArray, string, float64
 
 class UDF(object):
   """
@@ -120,9 +120,9 @@ registry.add(ScalarUDF("upper", 1, lambda col: compute.utf8_upper(col.cast(strin
 # Prepopulate with incremental aggregation functions
 #
 
-registry.add(AggUDF("count", 1, compute.count))
-registry.add(AggUDF("avg", 1, compute.mean))
-registry.add(AggUDF("sum", 1, compute.sum))
+registry.add(AggUDF("count", 1, lambda col: compute.count(col).cast(float64())))
+registry.add(AggUDF("avg", 1, lambda col: compute.mean(col).cast(float64())))
+registry.add(AggUDF("sum", 1, lambda col: compute.sum(col).cast(float64())))
 
 # Welford's algorithm for online std
 std_init = lambda: [0, 0., 0]

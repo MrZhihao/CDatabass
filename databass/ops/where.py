@@ -29,7 +29,12 @@ class Filter(UnaryOp):
   
   def hand_in_result(self):
     handin_res = self.c.hand_in_result()
+    if handin_res.is_terminate():
+      return ListColumns(self.schema, None)
     mask = self.cond(handin_res.columns)
-    return ListColumns(self.schema, [col.filter(mask) if col else None for col in handin_res])
+    if len(mask.unique()) == 1 and compute.equal(mask[0], False).as_py():
+      return ListColumns(self.schema, None)
+    else:
+      return ListColumns(self.schema, [col.filter(mask) if col else None for col in handin_res])
 
 

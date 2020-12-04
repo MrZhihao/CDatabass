@@ -4,12 +4,14 @@ from .tables import *
 import pandas
 import numbers
 import os
-import pyarrow
+import pyarrow as pa
 from pyarrow import Table as pa_tb
+from forbiddenfruit import curse
 
 openfile = open
 
-
+def pyarrow_scalar_getitem(self, id):
+  return self
 
 def infer_schema_from_df(df):
   from .exprs import guess_type, Attr
@@ -50,6 +52,7 @@ class Database(object):
     self._col_tb_registry = {}
     self.function_registry = {}
     self.table_function_registry = {}
+    self.setup_pa_scalar()
     self.setup()
 
   @staticmethod
@@ -58,6 +61,13 @@ class Database(object):
       Database._db = Database()
     return Database._db
 
+  def setup_pa_scalar(self):
+    # TODO performance validation
+    curse(pa.DoubleScalar, "__getitem__", pyarrow_scalar_getitem)
+    curse(pa.StringScalar, "__getitem__", pyarrow_scalar_getitem)
+    curse(pa.BooleanScalar, "__getitem__", pyarrow_scalar_getitem)
+    curse(pa.Date64Scalar, "__getitem__", pyarrow_scalar_getitem)
+    
   def setup(self):
     """
     Walks all CSV files in the current directory and registers

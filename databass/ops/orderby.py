@@ -38,6 +38,8 @@ class OrderBy(UnaryOp):
     order = [x == "asc" for x in self.ascdescs]
     
     handin_res = self.c.hand_in_result()
+    if handin_res.is_terminate():
+      return ListColumns(self.schema, None)
     
     sortby_keys = np.array([expr(handin_res).to_numpy() for expr in self.order_exprs]).T
     sortby_keys_df = pd.DataFrame(sortby_keys)

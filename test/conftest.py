@@ -6,7 +6,6 @@ import pytest
 
 from databass import *
 from databass.ops import *
-from databass.parse_sql import get_parserTree_tableAlias
 
 
 # 

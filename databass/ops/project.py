@@ -54,6 +54,9 @@ class Project(UnaryOp):
       return ListColumns(self.schema, [None] * len(self.schema))
     
     handin_res = self.c.hand_in_result()
+    if handin_res.is_terminate():
+      return ListColumns(self.schema, None)
+    
     res_columns = []
     for exp in self.exprs:
       res_columns.append(exp(handin_res))

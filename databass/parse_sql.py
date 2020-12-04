@@ -87,7 +87,7 @@ grammar = Grammar(
                "<=" / ">=" / "<" / ">" / "and" / 
                "AND" / "or" / "OR" / "like" / "LIKE" 
     binaryop_no_andor = "+" / "-" / "*" / "/" / "==" / "=" / "<>" / "!=" / 
-               "<=" / ">=" / "<" / ">" / "or" / "OR" / "like" / "LIKE" 
+               "<=" / ">=" / "<" / ">" / "or " / "OR " / "like" / "LIKE" 
     unaryop  = "+" / "-" / "not" / "NOT"
     ws       = ~"\s*"i
     wsp      = ~"\s+"i
@@ -430,10 +430,4 @@ def parse(s):
   query = Visitor().parse(s)
   query.initialize()
   return query
-
-def get_parserTree_tableAlias(s):
-  query = parse(s)
-  source_tables = list(filter(lambda x: x.typ == PRangeVar.TABLE, query.collect("PRangeVar")))
-  alias2table = {source_table.alias: source_table.e for source_table in source_tables}
-  return query, alias2table
 

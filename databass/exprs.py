@@ -13,6 +13,7 @@ from databass.columns import ListColumns
 from .baseops import *
 from .util import guess_type
 from pyarrow import compute
+import pyarrow as pa
 
 
 def unary(op, v):
@@ -34,7 +35,7 @@ def unary_col(op, v):
   if op == "+":
     return v
   if op == "-":
-    return compute.subtract(0, v)
+    return compute.subtract(0.0, v)
   if op.lower() == "not":
     return compute.invert(v)
   raise Exception("unary op not implemented")
@@ -296,6 +297,7 @@ class AggFunc(ExprBase):
 
   def __call__(self, columns):
     args = [arg(columns) for arg in self.args]
+    args = [arg if isinstance(arg, pa.ChunkedArray) else [arg.as_py()] * columns.num_rows() for arg in args]
     return self.f(*args)
 
   def __str__(self):
@@ -345,9 +347,13 @@ class Literal(ExprBase):
   def __init__(self, v):
     super(Literal, self).__init__()
     self.v = v
+    self.v_pa = pa.scalar(v)
     self.id = ExprBase.next_id()
 
-  def __call__(self, row, row2=None):
+  def __call__(self, columns):
+    return self.v_pa
+
+  def val(self, columns):
     return self.v
 
   def get_type(self):
@@ -363,6 +369,9 @@ class Literal(ExprBase):
         raise Exception("Databass doesn't support strings that contain \"'\" :(")
       return "'%s'" % self.v
     return str(self.v)
+  
+  def __getitem__(self, idx):
+    return self.v_pa
 
 class List(Literal):
   def __init__(self, v):
@@ -380,13 +389,6 @@ class Bool(Literal):
 
   def get_type(self):
     return "num"
-
-  def __call__(self, v):
-    if type(v) == ListColumns:
-      res = [self.v] * v.num_rows()
-      return [self.v] * v.num_rows()
-    else:
-      return self.v
 
 class Date(Literal):
   def __init__(self, v):
