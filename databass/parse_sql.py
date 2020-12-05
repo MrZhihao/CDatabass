@@ -87,7 +87,7 @@ grammar = Grammar(
                "<=" / ">=" / "<" / ">" / "and" / 
                "AND" / "or" / "OR" / "like" / "LIKE" 
     binaryop_no_andor = "+" / "-" / "*" / "/" / "==" / "=" / "<>" / "!=" / 
-               "<=" / ">=" / "<" / ">" / "or" / "OR" / "like" / "LIKE" 
+               "<=" / ">=" / "<" / ">" / "or " / "OR " / "like" / "LIKE" 
     unaryop  = "+" / "-" / "not" / "NOT"
     ws       = ~"\s*"i
     wsp      = ~"\s+"i
@@ -389,6 +389,9 @@ class Visitor(NodeVisitor):
     return Literal(float(node.text))
 
   def visit_string(self, node, children):
+    if len(node.text) >= 2 and ((node.text[0] == "\"" and node.text[-1] == "\"") 
+      or (node.text[0] == "'" and node.text[-1] == "'")):
+        return Literal(node.text[1:-1]) 
     return Literal(node.text)
 
   def visit_parenval(self, node, children):
