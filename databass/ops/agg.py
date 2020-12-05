@@ -117,6 +117,12 @@ class GroupBy(UnaryOp):
     for expr in self.group_exprs:
       groupval_cols.append(expr(handin_res))
 
+    if not groupval_cols:
+      new_columns = []
+      for expr in self.project_exprs:
+        new_columns.append(expr(handin_res))
+      return ListColumns(self.schema, new_columns)
+
     for idx in range(groupval_cols[0].length()):
       groupval = tuple([col[idx] for col in groupval_cols])
       key = hash(groupval)

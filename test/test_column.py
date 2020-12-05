@@ -70,7 +70,12 @@ simple_qs = [
 ]
 
 tpc_h_qs = [
-  """SELECT O_CUSTKEY, sum(O_TOTALPRICE) FROM ORDERS WHERE O_ORDERSTATUS = 'O' GROUP BY O_CUSTKEY """,
+  # """SELECT O_CUSTKEY, sum(O_TOTALPRICE) FROM ORDERS WHERE O_ORDERSTATUS = 'O' GROUP BY O_CUSTKEY """,
+  """
+  SELECT sum(L_EXTENDEDPRICE* (1 - L_DISCOUNT)) as revenue
+  FROM LINEITEM, PART
+  WHERE P_PARTKEY = L_PARTKEY AND P_BRAND = 'Brand#12' AND L_QUANTITY >= 1 AND L_QUANTITY <= 1 + 10 AND L_SHIPINSTRUCT = 'DELIVER IN PERSON'
+  """,
 ]
 
 # run this to test: pytest test/test_column.py -k "test_q" -s --disable-warnings
