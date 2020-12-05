@@ -69,8 +69,12 @@ simple_qs = [
       WHERE d2.z = d3.y ORDER BY x, d2.z, d3.z""",
 ]
 
+tpc_h_qs = [
+  """SELECT O_CUSTKEY, sum(O_TOTALPRICE) FROM ORDERS WHERE O_ORDERSTATUS = 'O' GROUP BY O_CUSTKEY """,
+]
+
 # run this to test: pytest test/test_column.py -k "test_q" -s --disable-warnings
-@pytest.mark.parametrize("q", simple_qs)
+@pytest.mark.parametrize("q", tpc_h_qs)
 @pytest.mark.usefixtures('context')
 def test_q(context, q):
   run_query(context, q)

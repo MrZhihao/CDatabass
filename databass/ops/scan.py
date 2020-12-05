@@ -89,12 +89,12 @@ class Scan(Source):
 
   def get_col_up_needed(self):
     li = self.p.get_col_up_needed()
-    print(li)
+    #print(li)
     return li
 
   def get_cols_to_scan(self):
     self.cols_to_scan = list(set(filter(lambda col: col[0] == self.tablename, self.get_col_up_needed())))
-    print(self.cols_to_scan)
+    #print(self.cols_to_scan)
     
   def hand_in_result(self):
     valid_columns = [column[1] for column in self.cols_to_scan]
