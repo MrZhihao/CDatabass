@@ -40,8 +40,6 @@ class Filter(UnaryOp):
     
     if len(new_mask.unique()) == 1 and compute.equal(new_mask[0], False).as_py():
       return ListColumns(self.schema, None)
-    elif len(new_mask.unique()) == 1:
-      return handin_res
     
     if isinstance(self.p, Filter):
       handin_res.mask = new_mask
