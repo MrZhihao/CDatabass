@@ -3,6 +3,7 @@ import os.path
 from sqlalchemy import *
 import pandas as pd
 import pytest
+import numbers
 
 from databass import *
 from databass.ops import *
@@ -73,6 +74,14 @@ def run_query(context, qstr, order_matters=False):
   compare_results(context,
       sqlite_rows, databass_rows, order_matters)
 
+def fuzzy_equal(t1, t2):
+  res = True
+  for a, b in zip(t1, t2):
+    if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
+      res = res and (abs(float(a)-float(b)) < 1e-5)
+    else:
+      res = res and (a==b)
+  return res
 
 def compare_results(context, rows1, rows2, order_matters):
   if not order_matters:
@@ -81,7 +90,7 @@ def compare_results(context, rows1, rows2, order_matters):
   try:
     assert(len(rows1) == len(rows2))
     for r1, r2 in zip(rows1, rows2):
-      assert(tuple(r1) == tuple(r2))
+      assert(fuzzy_equal(tuple(r1), tuple(r2)))
   except Exception as e:
     print(rows1)
     print()

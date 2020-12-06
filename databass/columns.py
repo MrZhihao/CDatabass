@@ -4,9 +4,10 @@ class ListColumns(object):
   """
   columnar table base object()
   """
-  def __init__(self, schema, cols=None):
+  def __init__(self, schema, cols=None, mask=None):
     self.schema = schema
     self.columns = cols
+    self.mask = mask
 
   def copy(self):
     return ListColumns(self.schema.copy(), list(self.columns))
