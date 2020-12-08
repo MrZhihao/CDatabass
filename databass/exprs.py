@@ -61,7 +61,7 @@ def binary(op, l, r):
   if op == ">=": return l >= r
   raise Exception("binary op not implemented")
 
-def bianary_col_dict_encoding(op, l_encoded, r):
+def bianary_col_dict_encoding(op, l_encoded, r, reverse=False):
   # can't support batch mode for pyarrow
   l_encoded = l_encoded.chunk(0)
 
@@ -70,20 +70,20 @@ def bianary_col_dict_encoding(op, l_encoded, r):
   elif op in {"<>", "!="}:
     mask_df_unique = compute.not_equal(l_encoded.dictionary, r).to_pandas()
   elif op == "<": 
-    mask_df_unique = compute.less(l_encoded.dictionary, r).to_pandas()
+    mask_df_unique = (compute.less(l_encoded.dictionary, r) if reverse else compute.greater(l_encoded.dictionary, r)).to_pandas()
   elif op == ">": 
-    mask_df_unique = compute.greater(l_encoded.dictionary, r).to_pandas()
+    mask_df_unique = (compute.greater(l_encoded.dictionary, r) if reverse else compute.less(l_encoded.dictionary, r)).to_pandas()
   elif op == "<=": 
-    mask_df_unique = compute.less_equal(l_encoded.dictionary, r).to_pandas()
+    mask_df_unique = (compute.less_equal(l_encoded.dictionary, r) if reverse else compute.greater_equal(l_encoded.dictionary, r)).to_pandas()
   elif op == ">=": 
-    mask_df_unique = compute.greater_equal(l_encoded.dictionary, r).to_pandas()
+    mask_df_unique = (compute.greater_equal(l_encoded.dictionary, r) if reverse else compute.less_equal(l_encoded.dictionary, r)).to_pandas()
   else:
     raise Exception("{} not implement for encoding column", op)
 
   valid_indices = list(mask_df_unique[mask_df_unique].index)
   mask = compute.equal(l_encoded.indices, pa.scalar(valid_indices[0]).cast(pa.int32())) if valid_indices else False
   for idx in range(1, len(valid_indices)):
-    mask = compute.and_(mask, compute.equal(l_encoded.indices, pa.scalar(valid_indices[idx]).cast(pa.int32())))
+    mask = compute.or_(mask, compute.equal(l_encoded.indices, pa.scalar(valid_indices[idx]).cast(pa.int32())))
   return mask
 
 def binary_col(op, l, r):
@@ -95,7 +95,7 @@ def binary_col(op, l, r):
   elif (isinstance(l, pa.ChunkedArray) and isinstance(l.chunk(0),pa.DictionaryArray)):
     return bianary_col_dict_encoding(op, l, r)
   elif (isinstance(r, pa.ChunkedArray) and isinstance(r.chunk(0),pa.DictionaryArray)):
-    return bianary_col_dict_encoding(op, r, l)
+    return bianary_col_dict_encoding(op, r, l, True)
 
   if op == "+": return compute.add_checked(l, r)
   if op == "*": return compute.multiply_checked(l, r)

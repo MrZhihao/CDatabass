@@ -62,8 +62,11 @@ def run_plan(context, plan):
     for v in row:
       if isinstance(v, str):
         vals.append(v)
+      elif isinstance(v, pd.Timestamp):
+        vals.append(v.to_pydatetime().strftime("%Y-%m-%d"))
       else:
         vals.append(float(v))
+      
     databass_rows.append(vals)
   return databass_rows
 
