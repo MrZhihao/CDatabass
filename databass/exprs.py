@@ -61,6 +61,19 @@ def binary(op, l, r):
   if op == ">=": return l >= r
   raise Exception("binary op not implemented")
 
+def bianary_col_dict_encoding(op, l_encoded, r):
+  # can't support batch operation for pyarrow
+  l_encoded = l_encoded.chunk(0)
+  if op == "=":
+    mask_df_unique = compute.equal(l_encoded.dictionary, r).to_pandas()
+    valid_indices = list(mask_df_unique[mask_df_unique].index)
+    mask = compute.equal(l_encoded.indices, pa.scalar(valid_indices[0]).cast(pa.int32())) if valid_indices else False
+    for idx in range(1, len(valid_indices)):
+      mask = compute.and_(mask, compute.equal(l_encoded.indices, pa.scalar(valid_indices[idx]).cast(pa.int32())))
+    return mask
+  else:
+    raise Exception("{} not implement for encoding column", op)
+
 def binary_col(op, l, r):
   """
   interpretor for executing binary operator expressions
@@ -68,7 +81,12 @@ def binary_col(op, l, r):
   if op == "+": return compute.add_checked(l, r)
   if op == "*": return compute.multiply_checked(l, r)
   if op == '-': return compute.subtract_checked(l, r)
-  if op == "=": return compute.equal(l, r)
+  if op == "=": 
+    if (isinstance(l, pa.ChunkedArray) and isinstance(l.chunk(0),pa.DictionaryArray)):
+      return bianary_col_dict_encoding(op, l, r)
+    elif (isinstance(r, pa.ChunkedArray) and isinstance(r.chunk(0),pa.DictionaryArray)):
+      return bianary_col_dict_encoding(op, r, l)
+    return compute.equal(l, r)
   if op == "<>": return compute.not_equal(l, r)
   if op == "!=": return compute.not_equal(l, r)
   if op == "or": return compute.or_(l, r)

@@ -34,11 +34,11 @@ class Filter(UnaryOp):
 
     if isinstance(self.c, Filter):
       cond_mask = self.cond(handin_res.columns)
-      new_mask = compute.and_(handin_res.mask, cond_mask)
+      new_mask = compute.and_(handin_res.mask, cond_mask) if cond_mask else False
     else:
       new_mask = self.cond(handin_res.columns)
     
-    if len(new_mask.unique()) == 1 and compute.equal(new_mask[0], False).as_py():
+    if not new_mask or (len(new_mask.unique()) == 1 and compute.equal(new_mask[0], False).as_py()):
       return ListColumns(self.schema, None)
     
     if isinstance(self.p, Filter):

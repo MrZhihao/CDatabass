@@ -70,6 +70,8 @@ class InMemoryColumnarTable(Table):
     for idx in range(len(self.columns)):
       if self.columns[idx].type.equals(pa.int64()):
         self.columns[idx] = self.columns[idx].cast(pa.float64())
+      if self.columns[idx].type.equals(pa.string()):
+        self.columns[idx] = self.columns[idx].dictionary_encode()
 
     self.attr_to_idx = { a.aname: i 
         for i,a in enumerate(self.schema)}
