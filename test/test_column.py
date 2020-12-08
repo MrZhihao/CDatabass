@@ -70,7 +70,8 @@ simple_qs = [
 ]
 
 tpc_h_qs = [
-  """SELECT O_CUSTKEY, sum(O_TOTALPRICE) FROM ORDERS WHERE O_ORDERSTATUS = 'O' GROUP BY O_CUSTKEY """,
+  # """SELECT O_CUSTKEY, sum(O_TOTALPRICE) FROM ORDERS WHERE O_ORDERSTATUS = 'O' GROUP BY O_CUSTKEY """,
+  """SELECT L_SHIPDATE, count(1) FROM LINEITEM WHERE L_SHIPDATE >= date('1999-02-02') GROUP BY L_SHIPDATE"""
 ]
 
 # run this to test: pytest test/test_column.py -k "test_q" -s --disable-warnings

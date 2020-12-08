@@ -11,7 +11,8 @@
 """
 from .baseops import *
 from .util import guess_type
-
+import datetime
+from dateutil.parser import parse as parsedate
 
 def unary(op, v):
   """
@@ -29,6 +30,10 @@ def binary(op, l, r):
   """
   interpretor for executing binary operator expressions
   """
+  if isinstance(l, str) and isinstance(r, datetime.datetime):
+    l = parsedate(l)
+  elif isinstance(r, str) and isinstance(l, datetime.datetime):
+    r = parsedate(r)
   if op == "+": return l + r
   if op == "*": return l * r
   if op == "-": return l - r
@@ -129,6 +134,8 @@ class Expr(ExprBase):
     if self.op in Expr.numeric_ops:
       ltyp = self.l.get_type()
       rtyp = self.r.get_type() if self.r else None
+      if ltyp == "str" and rtyp == "str":
+        return True
       if ltyp != "num":
         return False
       if rtyp is not None and rtyp != "num":
@@ -356,7 +363,7 @@ class Date(Literal):
     super(Date, self).__init__(v)
 
   def get_type(self):
-    return "num"
+    return "str"
 
   def __str__(self):
     return "date({year}, {month}, {day})".format(
