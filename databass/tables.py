@@ -75,7 +75,8 @@ class InMemoryColumnarTable(Table):
       if self.columns[idx].type.equals(pa.string()):
         if re.match("^[0-9]{4}[\-][0-9]{2}[\-][0-9]{2}$", self.columns[idx][0].as_py()):
           self.columns[idx] = compute.strptime(self.columns[idx], format="%Y-%m-%d", unit='us')
-        self.columns[idx] = self.columns[idx].dictionary_encode()
+        if self.columns[idx].length() / len(compute.value_counts(self.columns[idx])) > 10:
+          self.columns[idx] = self.columns[idx].dictionary_encode()
 
     self.attr_to_idx = { a.aname: i 
         for i,a in enumerate(self.schema)}
