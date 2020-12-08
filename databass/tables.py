@@ -5,6 +5,8 @@ from .stats import Stats
 from .tuples import *
 from .exprs import Attr
 import pyarrow as pa
+import re
+from pyarrow import compute
 
 class Table(object):
   """
@@ -71,6 +73,8 @@ class InMemoryColumnarTable(Table):
       if self.columns[idx].type.equals(pa.int64()):
         self.columns[idx] = self.columns[idx].cast(pa.float64())
       if self.columns[idx].type.equals(pa.string()):
+        if re.match("^[0-9]{4}[\-][0-9]{2}[\-][0-9]{2}$", self.columns[idx][0].as_py()):
+          self.columns[idx] = compute.strptime(self.columns[idx], format="%Y-%m-%d", unit='us')
         self.columns[idx] = self.columns[idx].dictionary_encode()
 
     self.attr_to_idx = { a.aname: i 

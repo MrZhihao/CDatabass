@@ -124,7 +124,7 @@ class ExprBase(Op):
 
   def get_type(self):
     raise Exception("ExprBase.get_type() not implemented")
-
+  
   def check_type(self):
     """
     @return True if expression type checks, False otherwise
@@ -197,6 +197,8 @@ class Expr(ExprBase):
     if self.op in Expr.numeric_ops:
       ltyp = self.l.get_type()
       rtyp = self.r.get_type() if self.r else None
+      if ltyp == "str" and rtyp == "str":
+        return True
       if ltyp != "num":
         return False
       if rtyp is not None and rtyp != "num":
@@ -427,7 +429,7 @@ class Date(Literal):
     super(Date, self).__init__(v)
 
   def get_type(self):
-    return "num"
+    return "str"
 
   def __str__(self):
     return "date({year}, {month}, {day})".format(
