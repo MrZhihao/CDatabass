@@ -31,20 +31,10 @@ class Filter(UnaryOp):
     handin_res = self.c.hand_in_result()
     if handin_res.is_terminate():
       return ListColumns(self.schema, None)
-
-    if isinstance(self.c, Filter):
-      cond_mask = self.cond(handin_res.columns)
-      new_mask = compute.and_(handin_res.mask, cond_mask)
-    else:
-      new_mask = self.cond(handin_res.columns)
-    
-    if len(new_mask.unique()) == 1 and compute.equal(new_mask[0], False).as_py():
+    mask = self.cond(handin_res.columns)
+    if len(mask.unique()) == 1 and compute.equal(mask[0], False).as_py():
       return ListColumns(self.schema, None)
-    
-    if isinstance(self.p, Filter):
-      handin_res.mask = new_mask
-      return handin_res
     else:
-      return ListColumns(self.schema, [col.filter(new_mask) if col else None for col in handin_res])
+      return ListColumns(self.schema, [col.filter(mask) if col else None for col in handin_res])
 
 
