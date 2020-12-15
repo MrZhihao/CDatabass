@@ -113,16 +113,19 @@ class UDFRegistry(object):
 # Prepopulate registry with simple functions
 #
 registry = UDFRegistry.registry()
-registry.add(ScalarUDF("lower", 1, lambda col: compute.utf8_lower(col.cast(string()))))
-registry.add(ScalarUDF("upper", 1, lambda col: compute.utf8_upper(col.cast(string()))))
+registry.add(ScalarUDF("lower", 1, lambda s: str(s).lower()))
+registry.add(ScalarUDF("upper", 1, lambda s: str(s).upper()))
 
 #
 # Prepopulate with incremental aggregation functions
 #
 
-registry.add(AggUDF("count", 1, lambda col: compute.count(col).cast(float64())))
-registry.add(AggUDF("avg", 1, lambda col: compute.mean(col).cast(float64())))
-registry.add(AggUDF("sum", 1, lambda col: compute.sum(col).cast(float64())))
+registry.add(IncAggUDF("count", 1, len, lambda: 0, lambda s, v: s+1, lambda s:s))
+registry.add(IncAggUDF("avg", 1, np.mean, 
+  lambda: (0, 0), 
+  lambda s, v: (s[0]+v, s[1]+1),
+  lambda s: (s[0] / s[1]) if s[1] else float('nan')))
+registry.add(IncAggUDF("sum", 1, np.sum, lambda: 0, lambda s, v: s+v, lambda s: s))
 
 # Welford's algorithm for online std
 std_init = lambda: [0, 0., 0]

@@ -157,7 +157,44 @@ class GroupBy(UnaryOp):
     #     mask_groupcol_ht[unique_val] = compute.equal(groupval_cols[idx], unique_val)
     
     # mask_groupval_ht = {}
+
+  def __iter__(self):
+    """
+    GroupBy works as follows:
     
+    * Contruct and populate hash table with:
+      * key is defined by the group_exprs expressions  
+      * Track the values of the attributes from the most recent tuple that is
+        referenced in the grouping expressions
+      * Track the tuples in each bucket
+    * Iterate through each bucket, compose and populate a tuple that conforms to 
+      this operator's output schema (see self.init_schema)
+    """
+
+    hashtable = defaultdict(lambda: [None, None, []])
+
+    # initialize output row passed to parent operator
+    irow = ListTuple(self.schema, [])
+
+    # schema for non-aggregation project exprs
+    termrow = ListTuple(self.group_term_schema)
+
+    for row in self.c:
+      attrvals = [attr(row) for attr in self.group_attrs]
+      groupvals = tuple([e(row) for e in self.group_exprs])
+      key = hash(groupvals)
+      hashtable[key][0] = key
+      hashtable[key][1] = attrvals
+      hashtable[key][2].append(row.copy())
+
+    for _, (key, attrvals, group) in list(hashtable.items()):
+      for i, e in enumerate(self.project_exprs):
+        if e.is_type(AggFunc):
+          irow.row[i] = e(group)
+        else:
+          termrow.row = attrvals
+          irow.row[i] = e(termrow)
+      yield irow   
 
   def __str__(self):
     args = list(map(str, self.group_exprs))

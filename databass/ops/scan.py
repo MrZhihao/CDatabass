@@ -101,6 +101,26 @@ class Scan(Source):
     columns = ListColumns(self.schema, self.db[self.tablename + '_col'][valid_columns])
     return columns
 
+  def __iter__(self):
+    # initialize a single intermediate tuple
+    irow = ListTuple(self.schema, [])
+
+    valid_columns = [column[1] for column in self.cols_to_scan]
+    self.num_rows = self.db[self.tablename + '_col'].num_rows
+
+    self.columns = ListColumns(self.schema, self.db[self.tablename + '_col'][valid_columns])
+
+    for row in self.__column_to_tuples(self.columns):
+      irow.row = row
+      yield irow
+
+  def __column_to_tuples(self, inter_table):
+    for row_idx in range(self.num_rows):
+      row = []
+      for col_idx in range(len(inter_table.columns)):
+        row.append(None if not inter_table.columns[col_idx] else inter_table.columns[col_idx][row_idx].as_py())
+      yield row
+
   def __str__(self):
     return "Scan(%s AS %s)" % (self.tablename, self.alias)
 

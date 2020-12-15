@@ -62,6 +62,20 @@ class Project(UnaryOp):
       res_columns.append(exp(handin_res))
     return ListColumns(self.schema, res_columns)
 
+  def __iter__(self):
+    child_iter = self.c
+    # initialize single intermediate tuple to populate and pass to parent
+    irow = ListTuple(self.schema, [])
+
+    # if the query doesn't have a FROM clause (SELECT 1), pass up an empty tuple
+    if self.c == None:
+      child_iter = [dict()]
+
+    for row in child_iter:
+      for i, (exp) in enumerate(self.exprs):
+        irow.row[i] = exp(row)
+      yield irow
+
   def __str__(self):
     args = ", ".join(["%s AS %s" % (e, a) 
       for (e, a) in  zip(self.exprs, self.aliases)])

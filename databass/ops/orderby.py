@@ -47,6 +47,23 @@ class OrderBy(UnaryOp):
     col_idxes = sortby_keys_df.sort_values(by=list(range(len(order))), ascending=order, kind="mergesort").index.to_list()
     return ListColumns(self.schema, [col.take(col_idxes) if col else None for col in handin_res])
 
+  def __iter__(self):
+    """
+    OrderBy is a blocking operator that needs to accumulate all of its child
+    operator's outputs before sorting by the order expressions.
+    Note: each row from the child operator may not be a distinct Tuple object
+    """
+    order = [1 if x == "asc" else -1 for x in self.ascdescs]
+
+    def keyf(row):
+      vals = tuple(expr(row) for expr in self.order_exprs)
+      return OBTuple(vals, order)
+
+    rows = [row.copy() for row in self.c]
+    rows.sort(key=keyf)
+    for row in rows:
+      yield row
+      
   def __str__(self):
     args = ", ".join(["%s %s" % (e, ad) 
       for (e, ad) in  zip(self.order_exprs, self.ascdescs)])

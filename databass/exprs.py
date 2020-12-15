@@ -14,6 +14,8 @@ from .baseops import *
 from .util import guess_type
 from pyarrow import compute
 import pyarrow as pa
+import datetime
+from dateutil.parser import parse as parsedate
 
 
 def unary(op, v):
@@ -208,9 +210,9 @@ class Expr(ExprBase):
 
     l = self.l(columns)
     if self.r is None:
-      return unary_col(self.op, l)
+      return unary(self.op, l)
     r = self.r(columns)
-    return binary_col(self.op, l, r) 
+    return binary(self.op, l, r) 
 
 class Paren(ExprBase):
   def __init__(self, c):
@@ -301,9 +303,14 @@ class AggFunc(ExprBase):
   def is_incremental(self):
     return self.f.is_incremental
 
-  def __call__(self, columns):
-    args = [arg(columns) for arg in self.args]
-    args = [arg if isinstance(arg, pa.ChunkedArray) else [arg.as_py()] * columns.num_rows() for arg in args]
+  def __call__(self, rows):
+    args = []
+    for grow in rows:
+      args.append([arg(grow) for arg in self.args])
+
+    # make the arguments columnar:
+    #   [ (a,a,a,a), (b,b,b,b) ]
+    args = list(zip(*args))
     return self.f(*args)
 
   def __str__(self):
@@ -340,8 +347,8 @@ class ScalarFunc(ExprBase):
     args = [a.copy() for a in self.args]
     return AggFunc(self.name, args, self.f)
 
-  def __call__(self, columns):
-    args = [arg(columns) for arg in self.args]
+  def __call__(self, row):
+    args = [arg(row) for arg in self.args]
     return self.f(*args)
 
   def __str__(self):
@@ -357,7 +364,7 @@ class Literal(ExprBase):
     self.id = ExprBase.next_id()
 
   def __call__(self, columns):
-    return self.v_pa
+    return self.v
 
   def val(self, columns):
     return self.v
