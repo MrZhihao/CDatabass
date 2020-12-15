@@ -1,11 +1,13 @@
 """
 Implementation of logical and physical relational operators
 """
+from databass.columns import ListColumns
 from ..baseops import UnaryOp
 from ..exprs import *
 from ..schema import *
 from ..tuples import *
-from ..util import cache, OBTuple
+from ..columns import *
+from ..util import cache, OBTuple, columnar_to_tuples
 from itertools import chain
 
 ########################################################
@@ -30,6 +32,12 @@ class SubQuerySource(Source):
   def __iter__(self):
     for row in self.c:
       yield row
+  
+  def get_col_up_needed(self):
+    return self.p.get_col_up_needed()
+
+  def hand_in_result(self):
+    return self.c.hand_in_result()
 
   def init_schema(self):
     """
@@ -61,6 +69,10 @@ class Scan(Source):
     super(Scan, self).__init__()
     self.tablename = tablename
     self.alias = alias or tablename
+    self.cols_to_scan = None
+
+    # List of tuples (table name, attribute name)
+    self.cols_to_scan = []
 
     from ..db import Database
     self.db = Database.db()
@@ -75,14 +87,19 @@ class Scan(Source):
     self.schema.set_tablename(self.alias)
     return self.schema
 
-  def __iter__(self):
-    # initialize a single intermediate tuple
-    irow = ListTuple(self.schema, [])
+  def get_col_up_needed(self):
+    li = self.p.get_col_up_needed()
+    #print(li)
+    return li
 
-    for row in self.db[self.tablename]:
-      irow.row = row.row
-      yield irow
-
+  def get_cols_to_scan(self):
+    self.cols_to_scan = list(set(filter(lambda col: col[0] == self.tablename, self.get_col_up_needed())))
+    #print(self.cols_to_scan)
+    
+  def hand_in_result(self):
+    valid_columns = [column[1] for column in self.cols_to_scan]
+    columns = ListColumns(self.schema, self.db[self.tablename + '_col'][valid_columns])
+    return columns
 
   def __str__(self):
     return "Scan(%s AS %s)" % (self.tablename, self.alias)

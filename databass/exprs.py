@@ -9,10 +9,12 @@
      T.a + 2 / T.b
 
 """
+from databass.columns import ListColumns
 from .baseops import *
 from .util import guess_type
-import datetime
-from dateutil.parser import parse as parsedate
+from pyarrow import compute
+import pyarrow as pa
+
 
 def unary(op, v):
   """
@@ -24,6 +26,18 @@ def unary(op, v):
     return -v
   if op.lower() == "not":
     return not(v)
+  raise Exception("unary op not implemented")
+
+def unary_col(op, v):
+  """
+  interpretor for executing unary operator expressions on columnars
+  """
+  if op == "+":
+    return v
+  if op == "-":
+    return compute.subtract(0.0, v)
+  if op.lower() == "not":
+    return compute.invert(v)
   raise Exception("unary op not implemented")
 
 def binary(op, l, r):
@@ -51,6 +65,27 @@ def binary(op, l, r):
   if op == ">=": return l >= r
   raise Exception("binary op not implemented")
 
+def binary_col(op, l, r):
+  """
+  interpretor for executing binary operator expressions
+  """
+  if op == "+": return compute.add_checked(l, r)
+  if op == "*": return compute.multiply_checked(l, r)
+  if op == '-': return compute.subtract_checked(l, r)
+  if op == "=": return compute.equal(l, r)
+  if op == "<>": return compute.not_equal(l, r)
+  if op == "!=": return compute.not_equal(l, r)
+  if op == "or": return compute.or_(l, r)
+  if op == "<": return compute.less(l, r)
+  if op == ">": return compute.greater(l, r)
+  if op == "/": return compute.divide_checked(l, r)
+  if op == "and": return compute.and_(l, r)
+  if op == "in": return compute.is_in(l, r)
+  if op == "==": return compute.equal(l, r)
+  if op == "<=": return compute.less_equal(l, r)
+  if op == ">=": return compute.greater_equal(l, r)
+  raise Exception("binary op not implemented")
+
 class ExprBase(Op):
   id = 0
 
@@ -61,7 +96,7 @@ class ExprBase(Op):
 
   def get_type(self):
     raise Exception("ExprBase.get_type() not implemented")
-
+  
   def check_type(self):
     """
     @return True if expression type checks, False otherwise
@@ -169,12 +204,13 @@ class Expr(ExprBase):
     if r: r = r.copy()
     return Expr(self.op, self.l.copy(), r)
 
-  def __call__(self, row, row2=None):
-    l = self.l(row)
+  def __call__(self, columns):
+
+    l = self.l(columns)
     if self.r is None:
-      return unary(self.op, l)
-    r = self.r(row)
-    return binary(self.op, l, r)
+      return unary_col(self.op, l)
+    r = self.r(columns)
+    return binary_col(self.op, l, r) 
 
 class Paren(ExprBase):
   def __init__(self, c):
@@ -265,14 +301,9 @@ class AggFunc(ExprBase):
   def is_incremental(self):
     return self.f.is_incremental
 
-  def __call__(self, rows, row2=None):
-    args = []
-    for grow in rows:
-      args.append([arg(grow) for arg in self.args])
-
-    # make the arguments columnar:
-    #   [ (a,a,a,a), (b,b,b,b) ]
-    args = list(zip(*args))
+  def __call__(self, columns):
+    args = [arg(columns) for arg in self.args]
+    args = [arg if isinstance(arg, pa.ChunkedArray) else [arg.as_py()] * columns.num_rows() for arg in args]
     return self.f(*args)
 
   def __str__(self):
@@ -309,8 +340,8 @@ class ScalarFunc(ExprBase):
     args = [a.copy() for a in self.args]
     return AggFunc(self.name, args, self.f)
 
-  def __call__(self, row, row2=None):
-    args = [arg(row) for arg in self.args]
+  def __call__(self, columns):
+    args = [arg(columns) for arg in self.args]
     return self.f(*args)
 
   def __str__(self):
@@ -322,9 +353,13 @@ class Literal(ExprBase):
   def __init__(self, v):
     super(Literal, self).__init__()
     self.v = v
+    self.v_pa = pa.scalar(v)
     self.id = ExprBase.next_id()
 
-  def __call__(self, row, row2=None):
+  def __call__(self, columns):
+    return self.v_pa
+
+  def val(self, columns):
     return self.v
 
   def get_type(self):
@@ -340,6 +375,9 @@ class Literal(ExprBase):
         raise Exception("Databass doesn't support strings that contain \"'\" :(")
       return "'%s'" % self.v
     return str(self.v)
+  
+  def __getitem__(self, idx):
+    return self.v_pa
 
 class List(Literal):
   def __init__(self, v):
@@ -410,6 +448,8 @@ class Attr(ExprBase):
     # It should be initialized in optimizer.__call__()
     self.idx = idx
 
+    self.real_tablename = None
+
     self.id = ExprBase.next_id()
 
   def get_type(self):
@@ -458,8 +498,8 @@ class Attr(ExprBase):
 
 
 
-  def __call__(self, row, *args):
-    return row[self.idx]
+  def __call__(self, columns):
+    return columns[self.idx]
 
   def __str__(self):
     s = ".".join(filter(bool, [self.tablename, self.aname]))

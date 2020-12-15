@@ -2,25 +2,23 @@ from .conftest import *
 from databass.parse_sql import *
 
 parse_qs = [
-        "SELECT 1 ORDER BY 1",
-        "SELECT 1 ORDER BY a",
-        "SELECT 1 ORDER BY a asc"
-        ,
-        "SELECT 1 ORDER BY 1+1",
-        "SELECT 1 ORDER BY 3+1",
-        "SELECT 1 ORDER BY (a)+1",
-        "SELECT 1 ORDER BY (a+1)",
-        "SELECT 1 ORDER BY a+b",
-        "SELECT 1 ORDER BY a+b asc",
-        "SELECT 1 ORDER BY a+b ASC",
-        "SELECT 1 ORDER BY a+b desc",
-        "SELECT 1 ORDER BY a+b, 1 desc",
-        "SELECT 1 ORDER BY a+b, 1+1 asc",
-        "SELECT 1 ORDER BY a+b, a+1 asc", 
-        "SELECT 1 ORDER BY a+b, a+c asc",
-        "SELECT 1 ORDER BY a asc, b desc"
-
-    ]
+    "SELECT 1 ORDER BY 1",
+    "SELECT 1 ORDER BY a",
+    "SELECT 1 ORDER BY a asc",
+    "SELECT 1 ORDER BY 1+1",
+    "SELECT 1 ORDER BY 3+1",
+    "SELECT 1 ORDER BY (a)+1",
+    "SELECT 1 ORDER BY (a+1)",
+    "SELECT 1 ORDER BY a+b",
+    "SELECT 1 ORDER BY a+b asc",
+    "SELECT 1 ORDER BY a+b ASC",
+    "SELECT 1 ORDER BY a+b desc",
+    "SELECT 1 ORDER BY a+b, 1 desc",
+    "SELECT 1 ORDER BY a+b, 1+1 asc",
+    "SELECT 1 ORDER BY a+b, a+1 asc", 
+    "SELECT 1 ORDER BY a+b, a+c asc",
+    "SELECT 1 ORDER BY a asc, b desc"
+  ]
 
 parse_badqs = [
         "SELECT 1 ORDER BY",
@@ -44,8 +42,7 @@ end2end_qs = [
     "SELECT a+b FROM data ORDER BY a",
     "SELECT * from data ORDER BY a asc",
     "SELECT * from data ORDER BY a",
-    "SELECT * from data ORDER BY a desc"
-    ,
+    "SELECT * from data ORDER BY a desc",
     "SELECT * from data ORDER BY a, b",
     "SELECT * from data ORDER BY a asc, b asc",
     "SELECT * from data ORDER BY a asc, b desc",
@@ -59,8 +56,7 @@ end2end_qs = [
 ]
 
 end2end_badqs = [
-    "SELECT 1 ORDER BY a"
-    ,
+    "SELECT 1 ORDER BY a",
     "SELECT 1 ORDER BY (a+b1)+1 asc",
     "SELECT 1 FROM data ORDER BY (a+b1)+1 asc",
     "SELECT 1 FROM data ORDER BY (1, 1)+1 asc",

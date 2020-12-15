@@ -43,7 +43,8 @@ if __name__ == "__main__":
     out.write(footer)
 
 def parse_and_optimize(qstr):
-  plan = parse(qstr).to_plan()
+  plan = parse(qstr)
+  plan = plan.to_plan()
   plan = Yield(plan)
   opt = Optimizer()
   optimized_plan = opt(plan)

@@ -20,7 +20,9 @@ def run_benchmark(workload_generator, db):
   data = []
   for x, q in workload:
     print(q)
-    plan = opt(parse(q).to_plan())
+    # PROJ
+    plan = parse(q)
+    plan = opt(plan.to_plan())
     y_iterator = timeit.timeit(lambda: list(plan), number=20)
     data.append(dict(x=x, y=y_iterator, label="iterator"))
 

@@ -92,7 +92,9 @@ if 0:
 
 # Set flag to True for Example of compiling a query
 if 0:
-  plan = Yield(opt(parse("SELECT a, a+b FROM data").to_plan()))
+  # PROJECT
+  plan = parse("SELECT a, a+b FROM data")
+  plan = Yield(opt(plan.to_plan()))
   q = PyCompiledQuery(plan, None)
   print(q.print_code())
   for row in q():

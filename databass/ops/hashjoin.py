@@ -1,3 +1,4 @@
+from databass.columns import ListColumns
 from ..baseops import *
 from ..exprs import *
 from ..db import Database
@@ -28,48 +29,55 @@ class HashJoin(Join):
     super(HashJoin, self).__init__(l, r)
     self.join_attrs = join_attrs
 
+  def get_col_up_needed(self, info=None):
+    seen = set(self.p.get_col_up_needed() if self.p else [])
+    for attr in self.join_attrs:
+      seen.add((attr.real_tablename, attr.aname))
+    return list(seen)
 
+  def build_hash_index(self, child_cols, idx):
+    """
+    @child_cols columnars to construct an index over
+    @attr attribute name to build index on
 
-  def __iter__(self):
+    Loops through a columnar iterator and creates an index based on
+    the attr value
     """
-    Build an index on the inner (right) source, then probe the index
-    for each row in the outer (left) source.  
-    
-    Yields each join result
-    """
-    # initialize intermediate row to populate and pass to parent operators
-    irow = ListTuple(self.schema)
+    right_ht = defaultdict(list)
+    for pos, val in enumerate(child_cols[idx]):
+      right_ht[val].append(pos)
+    return right_ht
+
+  def hand_in_result(self):
     lidx = self.join_attrs[0].idx
     ridx = self.join_attrs[1].idx
 
-    index = self.build_hash_index(self.r, ridx)
+    l_tb, r_tb = self.l.hand_in_result(), self.r.hand_in_result()
+    if l_tb.is_terminate() or r_tb.is_terminate():
+      return ListColumns(self.schema, None)
 
-    for lrow in self.l:
+    index = self.build_hash_index(r_tb, ridx)
+
+    left_col_pos, right_col_pos = [], []
+
+    for l_pos, l_key in enumerate(l_tb[lidx]):
       # probe the hash index
-      lval = lrow[lidx]
-      key = hash(lval)
-      matches = index[key]
+      matched_r = index[l_key]
 
-      # generate outputs for all matching tuples
-      irow.row[:len(lrow.row)] = lrow.row
-      for rrow in matches:
-        irow.row[len(lrow.row):] = rrow.row
-        # TODO: typically, check join condition again
-        yield irow
+      left_col_pos.extend([l_pos] * len(matched_r))
+      right_col_pos.extend(matched_r)
+    
+    if not left_col_pos or not right_col_pos:
+      return ListColumns(self.schema, None)
 
-  def build_hash_index(self, child_iter, idx):
-    """
-    @child_iter tuple iterator to construct an index over
-    @attr attribute name to build index on
-
-    Loops through a tuple iterator and creates an index based on
-    the attr value
-    """
-    index = defaultdict(list)
-    for row in child_iter:
-      val = row[idx]
-      key = hash(val)
-      index[key].append(row.copy())
-    return index
+    column_res = []
+    for l_col in l_tb:
+      column_res.append(l_col.take(left_col_pos) if l_col else None)
+  
+    for r_col in r_tb:
+      column_res.append(r_col.take(right_col_pos) if r_col else None)
+    
+    return ListColumns(self.schema, column_res)
+    
 
 

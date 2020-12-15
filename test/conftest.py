@@ -3,10 +3,10 @@ import os.path
 from sqlalchemy import *
 import pandas as pd
 import pytest
+import numbers
 
 from databass import *
 from databass.ops import *
-
 
 
 # 
@@ -55,11 +55,15 @@ def run_databass_query(context, qstr):
 def run_plan(context, plan):
   databass_rows = list()
   plan = context['opt'](plan)
+  plan = Yield_Col(plan)
+  plan.init_schema()
   for row in plan:
     vals = []
     for v in row:
       if isinstance(v, str):
         vals.append(v)
+      elif isinstance(v, pd.Timestamp):
+        vals.append(v.to_pydatetime().strftime("%Y-%m-%d"))
       else:
         vals.append(float(v))
     databass_rows.append(vals)
@@ -72,6 +76,14 @@ def run_query(context, qstr, order_matters=False):
   compare_results(context,
       sqlite_rows, databass_rows, order_matters)
 
+def fuzzy_equal(t1, t2):
+  res = True
+  for a, b in zip(t1, t2):
+    if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
+      res = res and (abs(float(a)-float(b)) < 1e-5)
+    else:
+      res = res and (a==b)
+  return res
 
 def compare_results(context, rows1, rows2, order_matters):
   if not order_matters:
@@ -80,7 +92,7 @@ def compare_results(context, rows1, rows2, order_matters):
   try:
     assert(len(rows1) == len(rows2))
     for r1, r2 in zip(rows1, rows2):
-      assert(tuple(r1) == tuple(r2))
+      assert(fuzzy_equal(tuple(r1), tuple(r2)))
   except Exception as e:
     print(rows1)
     print()

@@ -205,6 +205,21 @@ class Op(object):
     """
     raise Exception("Op.schema() not implemented for %s" % self)
 
+  def get_col_up_needed(self, info=None):
+    '''
+    1. call this function of the parent.
+    2. add cols this operator needs
+    3. return the final col lists 
+    '''
+    raise Exception("Op.get_col_up_needed() not implemented for %s" % self)
+    #return self.get_col_up_needed()
+  
+  def hand_in_result(self):
+    raise Exception("Op.hand_in_result() not implemented for %s" % self)
+
+  def __iter__(self):
+    return self.hand_in_result()
+
   def compile_exprs(self, ctx, exprs):
     """
     Helper function for compilation.  Compiles a list
@@ -326,7 +341,7 @@ class BinaryOp(Op):
     self.schema = Schema(attrs)
     return self.schema
 
-
+  
   def __setattr__(self, attr, v):
     super(BinaryOp, self).__setattr__(attr, v)
     if attr in ("l", "r") and v:

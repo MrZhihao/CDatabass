@@ -83,3 +83,12 @@ class OBTuple(object):
         continue
 
     return 0
+
+def columnar_to_tuples(inter_table):
+    num_rows = inter_table.num_rows()
+    
+    for row_idx in range(num_rows):
+      row = []
+      for col_idx in range(len(inter_table)):
+        row.append(None if not inter_table[col_idx] else inter_table[col_idx][row_idx].as_py())
+      yield row

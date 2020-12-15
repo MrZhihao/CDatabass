@@ -2,6 +2,7 @@
 Define the structure of aggregate and scalar UDFs, and the UDF registry.
 """
 import numpy as np
+from pyarrow import compute, ChunkedArray, string, float64
 
 class UDF(object):
   """
@@ -37,7 +38,7 @@ class AggUDF(UDF):
   def __call__(self, *args):
     if len(args) != self.nargs:
       raise Exception("Number of arguments did not match expected number.  %s != %s" % (len(args), self.nargs))
-    if not all(isinstance(arg, list) or isinstance(arg, tuple) for arg in args):
+    if not all(isinstance(arg, list) or isinstance(arg, tuple) or isinstance(arg, ChunkedArray) for arg in args):
       print(args)
       raise Exception("AggUDF expects each argument to be a column.")
     return self.f(*args)
@@ -112,19 +113,16 @@ class UDFRegistry(object):
 # Prepopulate registry with simple functions
 #
 registry = UDFRegistry.registry()
-registry.add(ScalarUDF("lower", 1, lambda s: str(s).lower()))
-registry.add(ScalarUDF("upper", 1, lambda s: str(s).upper()))
+registry.add(ScalarUDF("lower", 1, lambda col: compute.utf8_lower(col.cast(string()))))
+registry.add(ScalarUDF("upper", 1, lambda col: compute.utf8_upper(col.cast(string()))))
 
 #
 # Prepopulate with incremental aggregation functions
 #
 
-registry.add(IncAggUDF("count", 1, len, lambda: 0, lambda s, v: s+1, lambda s:s))
-registry.add(IncAggUDF("avg", 1, np.mean, 
-  lambda: (0, 0), 
-  lambda s, v: (s[0]+v, s[1]+1),
-  lambda s: (s[0] / s[1]) if s[1] else float('nan')))
-registry.add(IncAggUDF("sum", 1, np.sum, lambda: 0, lambda s, v: s+v, lambda s: s))
+registry.add(AggUDF("count", 1, lambda col: compute.count(col).cast(float64())))
+registry.add(AggUDF("avg", 1, lambda col: compute.mean(col).cast(float64())))
+registry.add(AggUDF("sum", 1, lambda col: compute.sum(col).cast(float64())))
 
 # Welford's algorithm for online std
 std_init = lambda: [0, 0., 0]

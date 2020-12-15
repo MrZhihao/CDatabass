@@ -5,3 +5,5 @@ click
 pytest
 parsimonious
 sqlalchemy
+pyarrow
+forbiddenfruit

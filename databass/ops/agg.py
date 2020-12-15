@@ -6,6 +6,9 @@ from ..tuples import *
 from ..util import cache, OBTuple
 from ..udfs import *
 from itertools import chain
+from ..columns import ListColumns
+from pyarrow import compute, Table
+import pandas as pd
 
 
 ########################################################
@@ -79,43 +82,82 @@ class GroupBy(UnaryOp):
     self.group_term_schema = Schema(self.group_attrs)
     return self.schema
 
-  def __iter__(self):
+  def get_col_up_needed(self, info=None):
+    seen = set(self.p.get_col_up_needed() if self.p else [])
+    
+    for attr in chain(*[e.referenced_attrs for e in self.project_exprs]):
+      seen.add((attr.real_tablename, attr.aname))
+
+    for attr in self.group_attrs:
+        seen.add((attr.real_tablename, attr.aname))
+
+    return list(seen)
+
+  
+  def hand_in_result(self):
     """
     GroupBy works as follows:
     
-    * Contruct and populate hash table with:
-      * key is defined by the group_exprs expressions  
-      * Track the values of the attributes from the most recent tuple that is
-        referenced in the grouping expressions
-      * Track the tuples in each bucket
-    * Iterate through each bucket, compose and populate a tuple that conforms to 
+    * Contruct and populate hash table with key defined by the group_exprs expressions  
+    * Iterate through each bucket, compose and populate all tuples that conforms to 
       this operator's output schema (see self.init_schema)
     """
+    handin_res = self.c.hand_in_result()
+    if handin_res.is_terminate():
+      return ListColumns(self.schema, None)
 
+    # hash(key): [attr_pos, gr]
     hashtable = defaultdict(lambda: [None, None, []])
 
-    # initialize output row passed to parent operator
-    irow = ListTuple(self.schema, [])
-
     # schema for non-aggregation project exprs
-    termrow = ListTuple(self.group_term_schema)
+    termrow = ListColumns(self.group_term_schema)
 
-    for row in self.c:
-      attrvals = [attr(row) for attr in self.group_attrs]
-      groupvals = tuple([e(row) for e in self.group_exprs])
-      key = hash(groupvals)
-      hashtable[key][0] = key
-      hashtable[key][1] = attrvals
-      hashtable[key][2].append(row.copy())
+    groupval_cols = []
+
+    for expr in self.group_exprs:
+      groupval_cols.append(expr(handin_res))
+
+    if not groupval_cols:
+      new_columns = []
+      for expr in self.project_exprs:
+        new_columns.append(expr(handin_res))
+      return ListColumns(self.schema, new_columns)
+
+    for idx in range(groupval_cols[0].length()):
+      groupval = tuple([col[idx] for col in groupval_cols])
+      key = hash(groupval)
+      if not hashtable[key][0]:
+        hashtable[key][0] = groupval
+        hashtable[key][1] = [attr(handin_res)[idx] for attr in self.group_attrs]
+      hashtable[key][2].append(idx)
+    
+    res_rows = []
 
     for _, (key, attrvals, group) in list(hashtable.items()):
-      for i, e in enumerate(self.project_exprs):
-        if e.is_type(AggFunc):
-          irow.row[i] = e(group)
+      group_list_columns = ListColumns(handin_res.schema, [col.take(group) if col else None for col in handin_res])
+      row = []
+      for expr in self.project_exprs:
+        if expr.is_type(AggFunc):
+          row.append(expr(group_list_columns).as_py())
         else:
-          termrow.row = attrvals
-          irow.row[i] = e(termrow)
-      yield irow
+          termrow.columns = attrvals
+          row.append(expr(termrow).as_py())
+      res_rows.append(row)
+    
+    return ListColumns(self.schema, Table.from_pandas(pd.DataFrame(res_rows)).columns)
+
+    # Another potential approach with iterating each row
+    # unique_groupval_cols = [compute.unique(col) for col in groupval_cols]b
+    # mask_groupcol_hts = []
+
+    # for idx in range(len(unique_groupval_cols)):
+    #   unique_groupval_col = unique_groupval_cols[idx]
+    #   mask_groupcol_ht = {}
+    #   for unique_val in unique_groupval_col:
+    #     mask_groupcol_ht[unique_val] = compute.equal(groupval_cols[idx], unique_val)
+    
+    # mask_groupval_ht = {}
+    
 
   def __str__(self):
     args = list(map(str, self.group_exprs))

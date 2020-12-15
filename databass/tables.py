@@ -4,6 +4,9 @@ import os
 from .stats import Stats
 from .tuples import *
 from .exprs import Attr
+import pyarrow as pa
+import re
+from pyarrow import compute
 
 class Table(object):
   """
@@ -57,3 +60,34 @@ class InMemoryTable(Table):
     for row in self.rows:
       yield ListTuple(self.schema, row)
 
+
+class InMemoryColumnarTable(Table):
+  """
+  Column-oriented table that stores its data by arrow table in memory.
+  """
+  def __init__(self, schema, table):
+    super(InMemoryColumnarTable, self).__init__(schema)
+    self.num_rows = table.num_rows
+    self.columns = table.columns
+    for idx in range(len(self.columns)):
+      if self.columns[idx].type.equals(pa.int64()):
+        self.columns[idx] = self.columns[idx].cast(pa.float64())
+      if self.columns[idx].type.equals(pa.string()):
+
+        if re.match("^[0-9]{4}[\-][0-9]{2}[\-][0-9]{2}$", self.columns[idx][0].as_py()):
+          self.columns[idx] = compute.strptime(self.columns[idx], format="%Y-%m-%d", unit='us')
+
+    self.attr_to_idx = { a.aname: i 
+        for i,a in enumerate(self.schema)}
+  
+  def __getitem__(self, info):
+    if not isinstance(info, list):
+      info = [info]
+    if isinstance(info[0], int):
+      info = set(info)
+      return [self.columns[idx] if idx in info else None for idx in range(len(self.columns))]
+    elif isinstance(info[0], str):
+      info = set(info)
+      return [self.columns[idx] if self.schema[idx].aname in info else None for idx in range(len(self.columns))]
+    else:
+      raise Exception('Invalid fields for table')
